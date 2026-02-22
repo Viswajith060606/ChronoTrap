@@ -10,12 +10,6 @@ Exfiltration: Data tunneled to Discord via Webhooks.
 
 educational research only
 
-To help visitors understand how to deploy your ChronoTrap project to Railway, you should add a section to your README.md or a separate file named RAILWAY_DEPLOYMENT.md.
-
-This documentation is essential because it explains how to bridge the gap between the GitHub code and a live "C2" (Command and Control) environment.
-
-🚀 Railway Deployment Guide
-Copy and paste this content into your repository to guide your visitors:
 
 🛤️ Deploying to Railway
 This project is optimized for deployment on Railway. Follow these steps to get your own instance running in minutes.
