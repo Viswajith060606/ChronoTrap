@@ -5,7 +5,7 @@ const FormData = require('form-data');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const DISCORD_WEBHOOK = https://discord.com/api/webhooks/1474615026307563611/_JroK-CofeHzoY-UZaGnzFbtjA9HEUiMFuYSNs0dkRy52CIUFeUa2xF-mNDykTM0aDiL;
 const SECRET_PASSPHRASE = "neural-link-omega-99"; 
 const STEALTH_TOKEN = "delta-v-882-alpha";
 const GIF_MASK = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
