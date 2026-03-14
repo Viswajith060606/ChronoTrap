@@ -1,7 +1,7 @@
 {
-  "name": "neuralscan-c2",
+  "name": "chronotrap-c2",
   "version": "1.0.0",
-  "description": "Advanced Biometric Exfiltration POC",
+  "description": "Advanced Biometric C2 POC",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
